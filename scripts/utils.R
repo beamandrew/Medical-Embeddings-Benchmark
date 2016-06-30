@@ -67,10 +67,11 @@ get_dist <- function(word_vectors,query,sort_result=TRUE) {
   cos_dist <- text2vec:::cosine(query_vec, 
                                 word_vectors, 
                                 word_vectors_norm)
+  
+  cos_dist <- cos_dist[1,]
   if(sort_result) {
     cos_dist <- sort(cos_dist,decreasing = TRUE)
   }
-  cos_dist <- cos_dist[1,]
   return(cos_dist)
 }
 
