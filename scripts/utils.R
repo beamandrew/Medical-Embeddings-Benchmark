@@ -60,7 +60,7 @@ apk <- function(k, actual, predicted)
   score
 }
 
-get_ranks <- function(word_vectors,query) {
+get_dist <- function(word_vectors,query) {
   word_vectors <- as.matrix(word_vectors)
   word_vectors_norm <- sqrt(rowSums(word_vectors ^ 2))
   query_vec <- word_vectors[query,,drop=FALSE]
