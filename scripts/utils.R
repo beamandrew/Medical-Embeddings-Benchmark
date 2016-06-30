@@ -60,13 +60,16 @@ apk <- function(k, actual, predicted)
   score
 }
 
-get_dist <- function(word_vectors,query) {
+get_dist <- function(word_vectors,query,sort_result=TRUE) {
   word_vectors <- as.matrix(word_vectors)
   word_vectors_norm <- sqrt(rowSums(word_vectors ^ 2))
   query_vec <- word_vectors[query,,drop=FALSE]
   cos_dist <- text2vec:::cosine(query_vec, 
                                 word_vectors, 
                                 word_vectors_norm)
+  if(sort_result) {
+    cos_dist <- sort(cos_dist,decreasing = TRUE)
+  }
   cos_dist <- cos_dist[1,]
   return(cos_dist)
 }
