@@ -1,14 +1,14 @@
 library(dplyr)
 library(readr)
 library(text2vec)
-id_file <- read_delim("../data/2a_concept_ID_to_string.txt",delim="\t",col_names = FALSE,quote="")
+library(magrittr)
+id_file <- read_delim("./data/2a_concept_ID_to_string.txt",delim="\t",col_names = FALSE,quote="")
 colnames(id_file) <- c("Concept_ID","String")
-cui_file <- read_delim("../data/2b_concept_ID_to_CUI.txt",delim="\t",col_names = FALSE,quote="")
+cui_file <- read_delim("./data/2b_concept_ID_to_CUI.txt",delim="\t",col_names = FALSE,quote="")
 colnames(cui_file) <- c("Concept_ID","CUI")
 
 info <- id_file %>% inner_join(cui_file)
 
-# plz
 #' Compute the mean average precision at k
 #'
 #' This function computes the mean average precision at k
@@ -90,6 +90,17 @@ load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1) {
     rownames(embeddings) <- cuis
   }
   return(embeddings)
+}
+
+
+dcg <- function(vector, true_list){
+  score = 0 
+  cuis = names(vector)
+  relevant_cuis = which(cuis %in% true_list)
+  for(i in 1:length(relevant_cuis)){
+    score = score + (2^vector[relevant_cuis[i]]-1)/log2[relevant_cuis[i]]
+  }
+  score
 }
 
 
