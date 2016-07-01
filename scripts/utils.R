@@ -94,11 +94,11 @@ load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1) {
 
 
 dcg <- function(vector, true_list){
-  score = 0 
-  cuis = names(vector)
-  relevant_cuis = which(cuis %in% true_list)
+  score <- 0 
+  cuis <- names(vector)
+  relevant_cuis <- which(cuis %in% true_list)
   for(i in 1:length(relevant_cuis)){
-    score = score + (2^vector[relevant_cuis[i]]-1)/log2[relevant_cuis[i]]
+    score <- score + (2^vector[relevant_cuis[i]]-1)/log2[relevant_cuis[i]]
   }
   score
 }
