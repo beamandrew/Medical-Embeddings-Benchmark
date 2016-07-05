@@ -100,7 +100,12 @@ dcg <- function(vector, true_list){
   for(i in 1:length(relevant_cuis)){
     score <- score + (2^vector[relevant_cuis[i]]-1)/log2[relevant_cuis[i]]
   }
-  score
+  return(score)
+}
+
+load_comorbidity <- function(filename ){
+  commorbidity <- read.delim(filename)
+  return(commorbidity)
 }
 
 
