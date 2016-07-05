@@ -1,3 +1,4 @@
+CUI	Type	String
 C0001403	Concept	Addison Disease
 C2103602	Concept	Autoimmune Primary Adrenal Insufficiency
 C3887896	Concept	Primary Adrenal Insufficiency
