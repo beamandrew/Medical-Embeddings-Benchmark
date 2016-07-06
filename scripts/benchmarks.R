@@ -20,7 +20,7 @@ benchmark_comorbidities <- function(embeddings,k) {
     }
     length_df <- dim(df)[1]
     for(i in 1:length(missing_concepts)){
-      df[i+length_df,]<-c(strsplit(file,'.txt'),(missing_concepts[i]),-1)
+      df[i+length_df,]<-c(strsplit(file,'.txt'),(missing_concepts[i]),NA)
     }
   }
   return(df)
