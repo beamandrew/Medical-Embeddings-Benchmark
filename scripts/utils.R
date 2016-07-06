@@ -104,9 +104,14 @@ dcg <- function(vector, true_list){
   return(score)
 }
 
-load_comorbidity <- function(filename ){
+load_comorbidity <- function(filename){
   commorbidity <- read.delim(filename)
-  commorbidity
+  return(commorbidity)
+}
+
+load_semnatic_type <- function(filename,header=F,skip=1) {
+  semantic <- read.delim(filename)
+  return(semantic)
 }
 
 
