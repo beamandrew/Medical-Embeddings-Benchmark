@@ -50,19 +50,23 @@ benchmark_semantic_type <- function(embeddings,k){
 }
 
 benchmark_causitive <- function(embeddings,k){
-  df <- data.frame(semantic_type = character(), map = numeric(), stringsAsFactors = FALSE)
+  df <- data.frame(cause = character(), map = numeric(), stringsAsFactors = FALSE)
   if(k>length(rownames(embeddings))){return(NULL)}
-  for(file in list.files('.data/benchmarks/causative/')){
+  for(file in list.files('./data/benchmarks/causative/')){
+    print(file)
     length_df <- dim(df)[1]
     causitive <- load_causitive(paste0('./data/benchmarks/causative/',file))
+    print('a')
     cuis <- intersect(which(causitive$CUI_Cause %in% rownames(embeddings)),which(causitive$CUI_Result %in% rownames(embeddings)))
-
+    print('b')
+    print(cuis)
     if(length(cuis)==0 | k==0){
       df[length_df+1,] <- c(strsplit(file,'.txt'),0)
       next
     }
     map <- 0.0
     for(i in 1:length(cuis)){
+      print(cuis[i])
       dist <- get_dist(embeddings,causitive$CUI_cause[cuis[i]])[1:k]
       if(causitive$CUI_result[cuis[i]] %in% names(dist)){
         map <- map+1
