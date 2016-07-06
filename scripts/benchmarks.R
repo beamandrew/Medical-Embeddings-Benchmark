@@ -40,7 +40,7 @@ benchmark_semantic_type <- function(embeddings,k){
     map <- 0.0
     for(i in 1:length(cuis)){
       distances <- get_dist(embeddings,cuis[i])[1:k]
-      map <- map + length(intersect(setdiff(cuis,cuis[i]),names(distances)))/k
+      map <- map + length(intersect(cuis[-i],names(distances)))/k
     }
     map <- map / length(cuis)
     df[length_df+1,] <- c(strsplit(file,'.txt'),map)
