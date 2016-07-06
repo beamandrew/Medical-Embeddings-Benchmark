@@ -1,4 +1,4 @@
-CUI Type  String
+CUI	Type	String
 C0011854	Concept	Diabetes Mellitus, Insulin-Dependent
 C0348916	Concept	Type 1 diabetes mellitus with multiple complications
 C0677625	Concept	Type I diabetes mellitus without mention of complication
