@@ -6,6 +6,7 @@ options(stringsAsFactors = FALSE)
 
 benchmark_comorbidities <- function(embeddings,k) {
   df <- data.frame(class = character(), concept = character(), dcg = numeric(), associations = numeric(), stringsAsFactors = FALSE)
+  if(k>length(rownames(embeddings))){return(NULL)}
   for(file in list.files('./data/benchmarks/comorbidities/')){
     print(strsplit(file,'.txt'))
     comorbidity <- load_comorbidity(paste0('./data/benchmarks/comorbidities/',file))
@@ -44,6 +45,30 @@ benchmark_semantic_type <- function(embeddings,k){
     }
     map <- map / length(cuis)
     df[length_df+1,] <- c(strsplit(file,'.txt'),map)
+  }
+  return(df)
+}
+
+benchmark_causitive <- function(embeddings,k){
+  df <- data.frame(semantic_type = character(), map = numeric(), stringsAsFactors = FALSE)
+  if(k>length(rownames(embeddings))){return(NULL)}
+  for(file in list.files('.data/benchmarks/causative/')){
+    length_df <- dim(df)[1]
+    causitive <- load_causitive(paste0('./data/benchmarks/causative/',file))
+    cuis <- intersect(which(causitive$CUI_Cause %in% rownames(embeddings)),which(causitive$CUI_Result %in% rownames(embeddings)))
+
+    if(length(cuis)==0 | k==0){
+      df[length_df+1,] <- c(strsplit(file,'.txt'),0)
+      next
+    }
+    map <- 0.0
+    for(i in 1:length(cuis)){
+      dist <- get_dist(embeddings,causitive$CUI_cause[cuis[i]])[1:k]
+      if(causitive$CUI_result[cuis[i]] %in% names(dist)){
+        map <- map+1
+      }
+    }
+    map <- map / length(cuis)
   }
   return(df)
 }

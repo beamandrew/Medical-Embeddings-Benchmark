@@ -109,9 +109,14 @@ load_comorbidity <- function(filename){
   return(commorbidity)
 }
 
-load_semnatic_type <- function(filename,header=F,skip=1) {
+load_semnatic_type <- function(filename) {
   semantic <- read.delim(filename)
   return(semantic)
+}
+
+load_causitive <- function(filename){
+  causitive <- read.delim(filename)
+  return(causitive)
 }
 
 
