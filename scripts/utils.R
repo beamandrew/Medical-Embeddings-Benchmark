@@ -130,7 +130,7 @@ benchmark <- function(dir,k){
   for(file in list.files(dir)){
     if(file=='Benchmarks'){next}
     print(file)
-    if(grepl('cui',file) | grepl('DeVine',file)){
+    if((grepl('cui',file) | grepl('DeVine',file)) & !grepl('stanford',file)){
       embedding = load_embeddings(paste0(dir,file),convert_to_cui = FALSE)
     }
     else{
@@ -143,7 +143,7 @@ benchmark <- function(dir,k){
   }
 }
 
-benchmark <- function(dir,k){
+benchmark_map <- function(dir,k){
   path <- paste0(dir,'Benchmarks/')
   dir.create(path)
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
@@ -162,17 +162,41 @@ benchmark <- function(dir,k){
     ndf_rt <- benchmark_ndf_rt(embedding,k)
     
     for(i in 1:dim(causitive)[1]){
-      df[dim(df)[1]+1,] <- c(paste('causitive_',causitive[i,1]),name,causitive[i,2])
+      df[dim(df)[1]+1,] <- c(paste0('causitive_',causitive[i,1]),name,causitive[i,2])
     }
     for(i in 1:dim(semantic_type)[1]){
-      df[dim(df)[1]+1,] <- c(paste('semantic_type_',semantic_type[i,1]),name,semantic_type[i,2])
+      df[dim(df)[1]+1,] <- c(paste0('semantic_type_',semantic_type[i,1]),name,semantic_type[i,2])
     }
     for(i in 1:dim(ndf_rt)[1]){
-      df[dim(df)[1]+1,] <- c(paste('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
+      df[dim(df)[1]+1,] <- c(paste0('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
     }
   }
   return(df)
 }
+
+benchmark_dcg <- function(dir,k){
+  path <- paste0(dir,'Benchmarks/')
+  dir.create(path)
+  df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
+  for(file in list.files(dir)){
+    if(file=='Benchmarks'){next}
+    name <- strsplit(file,'.txt')
+    print(name)
+    if((grepl('cui',file) | grepl('DeVine',file))&!grepl('stanford',file)){
+      embedding <- load_embeddings(paste0(dir,file),convert_to_cui = FALSE)
+    }
+    else{
+      embedding <- load_embeddings(paste0(dir,file))
+    }
+    comorbidity <- benchmark_comorbidities(embedding, 40)
+    
+    for(i in 1:dim(comorbidity)[1]){
+      df[dim(df)[1]+1,] <- c(paste(comorbidity[i,1],comorbidity[i,2],sep='_'),name,comorbidity[i,3])
+    }
+  }
+  return(df)
+}
+
 
 
 
