@@ -119,6 +119,61 @@ load_causitive <- function(filename){
   return(causitive)
 }
 
+load_ndf_rt <- function(filename){
+  ndf_rt <- read.delim(filename)
+  return(ndf_rt)
+}
+
+benchmark <- function(dir,k){
+  path <- paste0(dir,'Benchmarks/')
+  dir.create(path)
+  for(file in list.files(dir)){
+    if(file=='Benchmarks'){next}
+    print(file)
+    if(grepl('cui',file) | grepl('DeVine',file)){
+      embedding = load_embeddings(paste0(dir,file),convert_to_cui = FALSE)
+    }
+    else{
+      embedding = load_embeddings(paste0(dir,file))
+    }
+    write.csv(benchmark_causitive(embedding,k),file=paste0(path,'causitive_',file))
+    write.csv(benchmark_comorbidities(embedding,k),file=paste0(path,'comorbidities_',file))
+    write.csv(benchmark_semantic_type(embedding,k),file=paste0(path,'semantic_type_',file))
+    write.csv(benchmark_ndf_rt(embedding,k),file=paste0(path,'ndf_rt_',file))
+  }
+}
+
+benchmark <- function(dir,k){
+  path <- paste0(dir,'Benchmarks/')
+  dir.create(path)
+  df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
+  for(file in list.files(dir)){
+    if(file=='Benchmarks'){next}
+    name <- strsplit(file,'.txt')
+    print(name)
+    if(grepl('cui',file) | grepl('DeVine',file)){
+      embedding <- load_embeddings(paste0(dir,file),convert_to_cui = FALSE)
+    }
+    else{
+      embedding <- load_embeddings(paste0(dir,file))
+    }
+    causitive <- benchmark_causitive(embedding,k)
+    semantic_type <- benchmark_semantic_type(embedding,k)
+    ndf_rt <- benchmark_ndf_rt(embedding,k)
+    
+    for(i in 1:dim(causitive)[1]){
+      df[dim(df)[1]+1,] <- c(paste('causitive_',causitive[i,1]),name,causitive[i,2])
+    }
+    for(i in 1:dim(semantic_type)[1]){
+      df[dim(df)[1]+1,] <- c(paste('semantic_type_',semantic_type[i,1]),name,semantic_type[i,2])
+    }
+    for(i in 1:dim(ndf_rt)[1]){
+      df[dim(df)[1]+1,] <- c(paste('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
+    }
+  }
+  return(df)
+}
+
 
 
 
