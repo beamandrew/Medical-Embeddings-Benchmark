@@ -81,8 +81,8 @@ cuis_to_string <- function(cuis) {
   return(strings)
 }
 
-load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1) {
-  embeddings <- read.delim(filename,sep=" ",skip=skip,header=header)
+load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1,sep=" ") {
+  embeddings <- read.delim(filename,sep=sep,skip=skip,header=header)
   rownames(embeddings) <- embeddings[,1]
   embeddings <- embeddings[,-1]
   if(convert_to_cui) {
