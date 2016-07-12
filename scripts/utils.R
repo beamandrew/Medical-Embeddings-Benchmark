@@ -200,70 +200,71 @@ benchmark_dcg <- function(dir,k){
 }
 
 
-visualize_embedding <- function(embedding,file='', type=''){
+visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
   type = toupper(type)
-  if(file==''){
+  if(is.null(tsne)){
     tsne <- Rtsne(as.matrix(embedding))
+  }
+  if(file==''){
     df <- tsne$Y
     colnames(df)<-c('X1','X2')
-    p <-ggplot(data=df,aes(x=X1,y=X2))+geom_point()+scale_alpha(.1)+theme_bw()
-    return(p)
+    rt <-ggplot(data=df,aes(x=X1,y=X2))+geom_point()+scale_alpha(.1)+theme_bw()
+    return(rt)
   }
-  if(type=='COMORBIDITY'){
+  if(identical(type,'COMORBIDITY')){
     comorbidity <- load_comorbidity(file)
-    tsne <- Rtsne(as.matrix(embedding))
     df <- data.frame(tsne$Y)
     colnames(df)<-c('X1','X2')
     concepts <- intersect(comorbidity$CUI[which(comorbidity$Type=='Concept')],rownames(embedding))
     associations <- intersect(comorbidity$CUI[which(comorbidity$Type=='Association')],rownames(embedding))
     df$CUI <- rownames(embedding)
     df$Type <- 'Background'
-    for(cui in concepts){df[match(cui,df$CUI),4]<-'Concept'}
+    for(cui in concepts){
+      df[match(cui,df$CUI),4]<-'Concept'}
     for(cui in associations){df[match(cui,df$CUI),4]<-'Association'}
-    p <- ggplot(data = data, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
-    return(p)
+    rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
+    return(rt)
   }
-  if(type=='CAUSATIVE'){
+  if(identical(type,'CAUSATIVE')){
     cause <- load_causitive(file)
-    tsne <- Rtsne(as.matrix(embedding))
     df <- data.frame(tsne$Y)
     colnames(df)<-c('X1','X2')
     df$CUI <- rownames(embedding)
     df$Type <- 'Background'
     for(cui in intersect(cause$CUI_Cause,df$CUI)){df[match(cui,df$CUI),4]<-'Cause'}
     for(cui in intersect(cause$CUI_Result,df$CUI)){df[match(cui,df$CUI),4]<-'Result'}
-    for(cui in intersect(which(causitive$CUI_Cause %in% rownames(embedding)),which(causitive$CUI_Result %in% rownames(embedding)))){df[match(cui,df$CUI),4]<-'Both'}
-    p <- ggplot(data = data, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9","#FF0000"))+scale_alpha_manual(values = c(.1,1,1,1))+theme_bw()
-    return(p)
+    rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
+    return(rt)
   }
-  if(type=='SEMANTIC_TYPE'){
+  if(identical(type,'SEMANTIC_TYPE')){
     semantic_type <- load_semnatic_type(file)
-    tsne <- Rtsne(as.matrix(embedding))
     df <- data.frame(tsne$Y)
     colnames(df)<-c('X1','X2')
     cuis <- intersect(semantic_type$CUI,rownames(embedding))
     df$CUI <- rownames(embedding)
     df$Type <- 'Background'
     for(cui in cuis){df[match(cui,df$CUI),4]<-'Semantic_Type'}
-    p <- ggplot(data = data, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00"))+scale_alpha_manual(values = c(.1,1))+theme_bw()
-    return(p)
+    rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00"))+scale_alpha_manual(values = c(.1,1))+theme_bw()
+    return(rt)
   }
-  if(type=='NDF_RT'){
+  if(identical(type,'NDF_RT')){
     ndfrt <- load_semnatic_type(file)
     treatment <- intersect(ndfrt$Treatment,rownames(embedding))
-    condition <- NULL 
+    condition <- ''
     for (i in 1:length(ndfrt$Condition)){
-      condition <- c(condition, intersect(strsplit(ndfrt$Condition[i]),rownames(embedding)))
+      condition <- paste0(condition, ndfrt$Condition[i])
     }
-    tsne <- Rtsne(as.matrix(embedding))
+    condition <- intersect(strsplit(condition,','),rownames(embedding))
     df <- data.frame(tsne$Y)
     colnames(df)<-c('X1','X2')
     df$CUI <- rownames(embedding)
     df$Type <- 'Background'
-    for(cui in treatment){df[match(cui,df$CUI),4]<-'Treatment'}
-    for(cui in condition){df[match(cui,df$CUI),4]<-'Condition'}
-    p <- ggplot(data = data, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
-    return(p)
+    for(cui in treatment){
+      df[match(cui,df$CUI),4]<-'Treatment'}
+    for(cui in condition){
+      df[match(cui,df$CUI),4]<-'Condition'}
+    rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
+    return(rt)
   }
   #No valid type
   return(NULL)
