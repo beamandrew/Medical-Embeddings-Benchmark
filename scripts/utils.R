@@ -2,6 +2,8 @@ library(dplyr)
 library(readr)
 library(text2vec)
 library(magrittr)
+library(Rtsne)
+library(ggplot2)
 id_file <- read_delim("./data/2a_concept_ID_to_string.txt",delim="\t",col_names = FALSE,quote="")
 colnames(id_file) <- c("Concept_ID","String")
 cui_file <- read_delim("./data/2b_concept_ID_to_CUI.txt",delim="\t",col_names = FALSE,quote="")
@@ -197,6 +199,12 @@ benchmark_dcg <- function(dir,k){
   return(df)
 }
 
+visualize_embedding <- function(embedding,file='', type=''){
+  if(file==''){
+    tsne <- Rtsne(as.matrix(embedding))
+    return(tsne)
+  }
+}
 
 
 
