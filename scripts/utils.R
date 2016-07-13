@@ -199,11 +199,14 @@ benchmark_dcg <- function(dir,k){
   return(df)
 }
 
+get_tsne <- function(embedding){
+  return(Rtsne(as.matrix(embedding)))
+}
 
 visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
   type = toupper(type)
   if(is.null(tsne)){
-    tsne <- Rtsne(as.matrix(embedding))
+    tsne <- get_tsne(embedding)
   }
   if(file==''){
     df <- tsne$Y
@@ -211,6 +214,7 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
     rt <-ggplot(data=df,aes(x=X1,y=X2))+geom_point()+scale_alpha(.1)+theme_bw()
     return(rt)
   }
+  name = strsplit(tail(strsplit(file,'/')[[1]],1),'.txt')[[1]]
   if(identical(type,'COMORBIDITY')){
     comorbidity <- load_comorbidity(file)
     df <- data.frame(tsne$Y)
@@ -222,7 +226,8 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
     for(cui in concepts){
       df[match(cui,df$CUI),4]<-'Concept'}
     for(cui in associations){df[match(cui,df$CUI),4]<-'Association'}
-    rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
+    rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#E69F00","#999999", "#56B4E9"))+scale_alpha_manual(values = c(1,.1,1))+theme_bw()
+    rt <- rt + labs(title=paste(name,'Comorbidity t-SNE'))
     return(rt)
   }
   if(identical(type,'CAUSATIVE')){
@@ -234,6 +239,7 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
     for(cui in intersect(cause$CUI_Cause,df$CUI)){df[match(cui,df$CUI),4]<-'Cause'}
     for(cui in intersect(cause$CUI_Result,df$CUI)){df[match(cui,df$CUI),4]<-'Result'}
     rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
+    rt <- rt+labs(title=paste(name,'Causitive t-SNE'))
     return(rt)
   }
   if(identical(type,'SEMANTIC_TYPE')){
@@ -243,8 +249,9 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
     cuis <- intersect(semantic_type$CUI,rownames(embedding))
     df$CUI <- rownames(embedding)
     df$Type <- 'Background'
-    for(cui in cuis){df[match(cui,df$CUI),4]<-'Semantic_Type'}
+    for(cui in cuis){df[match(cui,df$CUI),4]<-name}
     rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00"))+scale_alpha_manual(values = c(.1,1))+theme_bw()
+    rt <- rt+labs(title=paste(name,'Semantic Type t-SNE'))
     return(rt)
   }
   if(identical(type,'NDF_RT')){
@@ -264,6 +271,7 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
     for(cui in condition){
       df[match(cui,df$CUI),4]<-'Condition'}
     rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
+    rt <- rt+labs(title=paste(name,'NDF_RT t-SNE'))
     return(rt)
   }
   #No valid type
