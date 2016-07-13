@@ -111,7 +111,7 @@ load_comorbidity <- function(filename){
   return(commorbidity)
 }
 
-load_semnatic_type <- function(filename) {
+load_semantic_type <- function(filename) {
   semantic <- read.delim(filename)
   return(semantic)
 }
@@ -150,7 +150,7 @@ benchmark_map <- function(dir,k){
   dir.create(path)
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
   for(file in list.files(dir)){
-    if(file=='Benchmarks'){next}
+    if(file=='Benchmarks'|file=='word_embeddings_by_cuis.csv'){next}
     name <- strsplit(file,'.txt')
     print(name)
     if(grepl('cui',file) | grepl('DeVine',file)){
@@ -181,7 +181,7 @@ benchmark_dcg <- function(dir,k){
   dir.create(path)
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
   for(file in list.files(dir)){
-    if(file=='Benchmarks'){next}
+    if(file=='Benchmarks'|file=='word_embeddings_by_cuis.csv'){next}
     name <- strsplit(file,'.txt')
     print(name)
     if((grepl('cui',file) | grepl('DeVine',file))&!grepl('stanford',file)){
@@ -197,6 +197,23 @@ benchmark_dcg <- function(dir,k){
     }
   }
   return(df)
+}
+
+
+visualize_dcg <- function(dir, k){
+  df <- benchmark_dcg(dir,k)
+  rt <- ggplot(data=df, aes(x=df$test,y=df$score,color=df$embedding_name))+geom_point()
+  rt <- rt+theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  rt <- rt+labs(title=paste('DCG Benchmark of',dir))+labs(x='Test')+labs(y='DCG Score')
+  return(rt)
+}
+
+visualize_map <- function(dir, k){
+  df <- benchmark_map(dir,k)
+  rt <- ggplot(data=df, aes(x=df$test,y=df$score,color=df$embedding_name))+geom_point()
+  rt <- rt+theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  rt <- rt+labs(title=paste('MAP Benchmark of',dir))+labs(x='Test')+labs(y='Mean Average Precision')
+  return(rt)
 }
 
 get_tsne <- function(embedding){
