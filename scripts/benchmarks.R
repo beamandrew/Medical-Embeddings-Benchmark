@@ -4,25 +4,19 @@ library(dplyr)
 source("./Scripts/utils.R")
 options(stringsAsFactors = FALSE)
 
-benchmark_comorbidities <- function(embedding,k) {
+benchmark_comorbidities <- function(embedding,k, ref_cuis=NULL) {
   df <- data.frame(class = character(), concept = character(), dcg = numeric(), associations = numeric(), stringsAsFactors = FALSE)
-  if(k>length(rownames(embedding))){return(NULL)}
+  if(k>min(length(rownames(embedding)),length(ref_cuis))){return(NULL)}
   for(file in list.files('./data/benchmarks/comorbidities/')){
     comorbidity <- load_comorbidity(paste0('./data/benchmarks/comorbidities/',file))
-    concepts <- intersect(comorbidity$CUI[which(comorbidity$Type=='Concept')],rownames(embedding))
+    if(is.null(ref_cuis)){ref_cuis<-rownames(embeddings)}
+    concepts <- intersect(comorbidity$CUI[which(comorbidity$Type=='Concept')],ref_cuis)
     strings <- comorbidity$String[comorbidity$CUI %in% concepts]
-    missing_concepts <- comorbidity$String[match(setdiff(comorbidity$CUI[which(comorbidity$Type=='Concept')],concepts),comorbidity$CUI)]
-    associations <- intersect(comorbidity$CUI[which(comorbidity$Type=='Association')],rownames(embedding))
-    length_df <- dim(df)[1]
+    associations <- intersect(comorbidity$CUI[which(comorbidity$Type=='Association')],ref_cuis)
     for(i in 1:length(concepts)){
-      sim_scores <- get_dist(embedding,concepts[i])
-      df[i+length_df,]<-c(strsplit(file,'.txt'), strings[i], dcg(sim_scores[1:k], associations), length(associations))
+      sim_scores <- get_dist(embedding,concepts[i])[1:k]
+      df[dim(df)[1]+1,]<-c(strsplit(file,'.txt'), strings[i], dcg(sim_scores, associations), length(associations))
     }
-    length_df <- dim(df)[1]
-    # for(i in 1:length(missing_concepts)){
-    #   print(missing_concepts[i])
-    #   df[i+length_df,]<-c(strsplit(file,'.txt'),(missing_concepts[i]),NA,NA)
-    # }
   }
   return(df)
 }

@@ -126,24 +126,6 @@ load_ndf_rt <- function(filename){
   return(ndf_rt)
 }
 
-benchmark <- function(dir,k){
-  path <- paste0(dir,'Benchmarks/')
-  dir.create(path)
-  for(file in list.files(dir)){
-    if(file=='Benchmarks'){next}
-    print(file)
-    if((grepl('cui',file) | grepl('DeVine',file)) & !grepl('stanford',file)){
-      embedding = load_embeddings(paste0(dir,file),convert_to_cui = FALSE)
-    }
-    else{
-      embedding = load_embeddings(paste0(dir,file))
-    }
-    write.csv(benchmark_causitive(embedding,k),file=paste0(path,'causitive_',file))
-    write.csv(benchmark_comorbidities(embedding,k),file=paste0(path,'comorbidities_',file))
-    write.csv(benchmark_semantic_type(embedding,k),file=paste0(path,'semantic_type_',file))
-    write.csv(benchmark_ndf_rt(embedding,k),file=paste0(path,'ndf_rt_',file))
-  }
-}
 
 benchmark_map <- function(dir,k){
   path <- paste0(dir,'Benchmarks/')
@@ -176,35 +158,40 @@ benchmark_map <- function(dir,k){
   return(df)
 }
 
-benchmark_dcg <- function(dir,k){
-  path <- paste0(dir,'Benchmarks/')
-  dir.create(path)
+#Takes in one embedding you want to compare to some list of reference embeddings
+benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE){
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
-  for(file in list.files(dir)){
-    if(file=='Benchmarks'|file=='word_embeddings_by_cuis.csv'){next}
-    name <- strsplit(file,'.txt')
-    print(name)
-    if((grepl('cui',file) | grepl('DeVine',file))&!grepl('stanford',file)){
-      embedding <- load_embeddings(paste0(dir,file),convert_to_cui = FALSE)
+  ref_cuis <- rownames(embedding)
+  if(!is.null(ref_embeddings)&take_intersection){
+    for(j in 1:length(ref_embeddings)){
+      ref_cuis <- intersect(ref_cuis,rownames(ref_embeddings[[j]]))
     }
-    else{
-      embedding <- load_embeddings(paste0(dir,file))
-    }
-    comorbidity <- benchmark_comorbidities(embedding, 40)
-    
+  }
+  #Benchmark the embedding
+  comorbidity <- benchmark_comorbidities(embedding, k, ref_cuis)
+  name <- deparse(substitute(embedding))
+  for(j in 1:dim(comorbidity)[1]){
+      df[dim(df)[1]+1,] <- c(paste(comorbidity[j,1],comorbidity[j,2],sep='_'),name,comorbidity[j,3])
+  }
+  
+
+  #Benchmark the reference embeddings
+  for(j in 1:length(ref_embeddings)){
+    comorbidity <- benchmark_comorbidities(ref_embeddings[[j]], k, ref_cuis)
+    name <- deparse(substitute(ref_embeddings[[j]]))
     for(i in 1:dim(comorbidity)[1]){
       df[dim(df)[1]+1,] <- c(paste(comorbidity[i,1],comorbidity[i,2],sep='_'),name,comorbidity[i,3])
     }
   }
+  df <- as.numeric(df$score)
   return(df)
 }
 
 
-visualize_dcg <- function(dir, k){
-  df <- benchmark_dcg(dir,k)
+visualize_dcg <- function(df){
   rt <- ggplot(data=df, aes(x=df$test,y=df$score,color=df$embedding_name))+geom_point()
   rt <- rt+theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-  rt <- rt+labs(title=paste('DCG Benchmark of',dir))+labs(x='Test')+labs(y='DCG Score')
+  rt <- rt+labs(title='DCG Benchmark')+labs(x='Test')+labs(y='DCG Score')
   return(rt)
 }
 
@@ -294,6 +281,7 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
   #No valid type
   return(NULL)
 }
+
 
 
 
