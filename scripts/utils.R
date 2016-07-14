@@ -127,24 +127,37 @@ load_ndf_rt <- function(filename){
 }
 
 
-benchmark_map <- function(dir,k){
-  path <- paste0(dir,'Benchmarks/')
-  dir.create(path)
+benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE){
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
-  for(file in list.files(dir)){
-    if(file=='Benchmarks'|file=='word_embeddings_by_cuis.csv'){next}
-    name <- strsplit(file,'.txt')
-    print(name)
-    if(grepl('cui',file) | grepl('DeVine',file)){
-      embedding <- load_embeddings(paste0(dir,file),convert_to_cui = FALSE)
+  ref_cuis <- rownames(embedding)
+  if(!is.null(ref_embeddings)&take_intersection){
+    for(j in 1:length(ref_embeddings)){
+      ref_cuis <- intersect(ref_cuis,rownames(ref_embeddings[[j]]))
     }
-    else{
-      embedding <- load_embeddings(paste0(dir,file))
-    }
-    causitive <- benchmark_causitive(embedding,k)
-    semantic_type <- benchmark_semantic_type(embedding,k)
-    ndf_rt <- benchmark_ndf_rt(embedding,k)
+  }
+  #Benchmark the embedding 
+  causitive <- benchmark_causitive(embedding,k,ref_cuis)
+  semantic_type <- benchmark_semantic_type(embedding,k,ref_cuis)
+  ndf_rt <- benchmark_ndf_rt(embedding,k,ref_cuis)
+  
+  name <- deparse(substitute(embedding))
+  for(i in 1:dim(causitive)[1]){
+    df[dim(df)[1]+1,] <- c(paste0('causitive_',causitive[i,1]),name,causitive[i,2])
+  }
+  for(i in 1:dim(semantic_type)[1]){
+    df[dim(df)[1]+1,] <- c(paste0('semantic_type_',semantic_type[i,1]),name,semantic_type[i,2])
+  }
+  for(i in 1:dim(ndf_rt)[1]){
+    df[dim(df)[1]+1,] <- c(paste0('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
+  }
+  
+  #Benchmark the reference embeddings
+  for(j in 1:length(ref_embeddings)){
+    causitive <- benchmark_causitive(ref_embeddings[[i]],k,ref_cuis)
+    semantic_type <- benchmark_semantic_type(ref_embeddings[[i]],k,ref_cuis)
+    ndf_rt <- benchmark_ndf_rt(ref_embeddings[[i]],k,ref_cuis)
     
+    name <- paste0('reference_',i)
     for(i in 1:dim(causitive)[1]){
       df[dim(df)[1]+1,] <- c(paste0('causitive_',causitive[i,1]),name,causitive[i,2])
     }
@@ -155,7 +168,9 @@ benchmark_map <- function(dir,k){
       df[dim(df)[1]+1,] <- c(paste0('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
     }
   }
-  return(df)
+  
+  
+return(df)
 }
 
 #Takes in one embedding you want to compare to some list of reference embeddings
