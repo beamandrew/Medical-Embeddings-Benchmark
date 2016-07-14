@@ -159,7 +159,7 @@ benchmark_map <- function(dir,k){
 }
 
 #Takes in one embedding you want to compare to some list of reference embeddings
-benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE){
+benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE,return_max=FALSE){
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
   ref_cuis <- rownames(embedding)
   if(!is.null(ref_embeddings)&take_intersection){
@@ -168,7 +168,7 @@ benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE)
     }
   }
   #Benchmark the embedding
-  comorbidity <- benchmark_comorbidities(embedding, k, ref_cuis)
+  comorbidity <- benchmark_comorbidities(embedding, k, ref_cuis,return_max)
   name <- deparse(substitute(embedding))
   for(j in 1:dim(comorbidity)[1]){
       df[dim(df)[1]+1,] <- c(paste(comorbidity[j,1],comorbidity[j,2],sep='_'),name,comorbidity[j,3])
@@ -177,29 +177,28 @@ benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE)
 
   #Benchmark the reference embeddings
   for(j in 1:length(ref_embeddings)){
-    comorbidity <- benchmark_comorbidities(ref_embeddings[[j]], k, ref_cuis)
+    comorbidity <- benchmark_comorbidities(ref_embeddings[[j]], k, ref_cuis,return_max)
     name <- deparse(substitute(ref_embeddings[[j]]))
     for(i in 1:dim(comorbidity)[1]){
       df[dim(df)[1]+1,] <- c(paste(comorbidity[i,1],comorbidity[i,2],sep='_'),name,comorbidity[i,3])
     }
   }
-  df <- as.numeric(df$score)
+  df$score <- as.numeric(df$score)
   return(df)
 }
 
 
 visualize_dcg <- function(df){
-  rt <- ggplot(data=df, aes(x=df$test,y=df$score,color=df$embedding_name))+geom_point()
+  rt <- ggplot(data=df, aes(x=test,y=score,color=embedding_name))+geom_point()
   rt <- rt+theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   rt <- rt+labs(title='DCG Benchmark')+labs(x='Test')+labs(y='DCG Score')
   return(rt)
 }
 
-visualize_map <- function(dir, k){
-  df <- benchmark_map(dir,k)
+visualize_map <- function(df){
   rt <- ggplot(data=df, aes(x=df$test,y=df$score,color=df$embedding_name))+geom_point()
   rt <- rt+theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-  rt <- rt+labs(title=paste('MAP Benchmark of',dir))+labs(x='Test')+labs(y='Mean Average Precision')
+  rt <- rt+labs(title='MAP Benchmark of')+labs(x='Test')+labs(y='Mean Average Precision')
   return(rt)
 }
 

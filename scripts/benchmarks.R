@@ -4,7 +4,7 @@ library(dplyr)
 source("./Scripts/utils.R")
 options(stringsAsFactors = FALSE)
 
-benchmark_comorbidities <- function(embedding,k, ref_cuis=NULL) {
+benchmark_comorbidities <- function(embedding,k, ref_cuis=NULL, return_max = FALSE) {
   df <- data.frame(class = character(), concept = character(), dcg = numeric(), associations = numeric(), stringsAsFactors = FALSE)
   if(k>min(length(rownames(embedding)),length(ref_cuis))){return(NULL)}
   for(file in list.files('./data/benchmarks/comorbidities/')){
@@ -13,9 +13,23 @@ benchmark_comorbidities <- function(embedding,k, ref_cuis=NULL) {
     concepts <- intersect(comorbidity$CUI[which(comorbidity$Type=='Concept')],ref_cuis)
     strings <- comorbidity$String[comorbidity$CUI %in% concepts]
     associations <- intersect(comorbidity$CUI[which(comorbidity$Type=='Association')],ref_cuis)
+    max_score <- 0 
+    max_string <- ''
     for(i in 1:length(concepts)){
       sim_scores <- get_dist(embedding,concepts[i])[1:k]
-      df[dim(df)[1]+1,]<-c(strsplit(file,'.txt'), strings[i], dcg(sim_scores, associations), length(associations))
+      score <- dcg(sim_scores, associations)
+      if(!return_max){
+        df[dim(df)[1]+1,]<-c(strsplit(file,'.txt'), strings[i], score, length(associations))
+      }
+      if(return_max){
+        if(score>max_score){
+          max_score <- score
+          max_string <- strings[i]
+        }
+      }
+    }
+    if(return_max){
+      df[dim(df)[1]+1,]<-c(strsplit(file,'.txt'),'max',max_score,length(associations))
     }
   }
   return(df)
