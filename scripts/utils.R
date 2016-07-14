@@ -153,11 +153,11 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
   
   #Benchmark the reference embeddings
   for(j in 1:length(ref_embeddings)){
-    causitive <- benchmark_causitive(ref_embeddings[[i]],k,ref_cuis)
-    semantic_type <- benchmark_semantic_type(ref_embeddings[[i]],k,ref_cuis)
-    ndf_rt <- benchmark_ndf_rt(ref_embeddings[[i]],k,ref_cuis)
+    causitive <- benchmark_causitive(ref_embeddings[[j]],k,ref_cuis)
+    semantic_type <- benchmark_semantic_type(ref_embeddings[[j]],k,ref_cuis)
+    ndf_rt <- benchmark_ndf_rt(ref_embeddings[[j]],k,ref_cuis)
     
-    name <- paste0('reference_',i)
+    name <- paste0('reference_',j)
     for(i in 1:dim(causitive)[1]){
       df[dim(df)[1]+1,] <- c(paste0('causitive_',causitive[i,1]),name,causitive[i,2])
     }
@@ -169,7 +169,7 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
     }
   }
   
-  
+  df$score <- as.numeric(df$score)
 return(df)
 }
 
