@@ -153,6 +153,9 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
   
   #Benchmark the reference embeddings
   for(j in 1:length(ref_embeddings)){
+    if(!take_intersection){
+      ref_cuis <- intersect(rownames(embedding,rownames(ref_embeddings[[j]])))
+    }
     causitive <- benchmark_causitive(ref_embeddings[[j]],k,ref_cuis)
     semantic_type <- benchmark_semantic_type(ref_embeddings[[j]],k,ref_cuis)
     ndf_rt <- benchmark_ndf_rt(ref_embeddings[[j]],k,ref_cuis)
@@ -192,6 +195,9 @@ benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE,
 
   #Benchmark the reference embeddings
   for(j in 1:length(ref_embeddings)){
+    if(!take_intersection){
+      ref_cuis <- intersect(rownames(embedding,rownames(ref_embeddings[[j]])))
+    }
     comorbidity <- benchmark_comorbidities(ref_embeddings[[j]], k, ref_cuis,return_max)
     name <- deparse(substitute(ref_embeddings[[j]]))
     for(i in 1:dim(comorbidity)[1]){
