@@ -6,10 +6,11 @@ options(stringsAsFactors = FALSE)
 
 benchmark_comorbidities <- function(embedding,k, ref_cuis=NULL, return_max = FALSE) {
   df <- data.frame(class = character(), concept = character(), dcg = numeric(), associations = numeric(), stringsAsFactors = FALSE)
-  if(k>min(length(rownames(embedding)),length(ref_cuis))){return(NULL)}
+  
   for(file in list.files('./data/benchmarks/comorbidities/')){
     comorbidity <- load_comorbidity(paste0('./data/benchmarks/comorbidities/',file))
-    if(is.null(ref_cuis)){ref_cuis<-rownames(embeddings)}
+    if(is.null(ref_cuis)){ref_cuis<-rownames(embedding)}
+    if(k>min(length(rownames(embedding)),length(ref_cuis))){return(NULL)}
     concepts <- intersect(comorbidity$CUI[which(comorbidity$Type=='Concept')],ref_cuis)
     strings <- comorbidity$String[comorbidity$CUI %in% concepts]
     associations <- intersect(comorbidity$CUI[which(comorbidity$Type=='Association')],ref_cuis)

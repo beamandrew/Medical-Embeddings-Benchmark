@@ -83,8 +83,9 @@ cuis_to_string <- function(cuis) {
   return(strings)
 }
 
-load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1,sep=" ") {
-  embeddings <- read.delim(filename,sep=sep,skip=skip,header=header)
+load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1,sep=" ",csv=FALSE) {
+  if(csv==FALSE){embeddings <- read.delim(filename,sep=sep,skip=skip,header=header)}
+  if(csv==TRUE){embeddings <- read.csv(filename,sep=sep,skip=skip,header=header)}
   rownames(embeddings) <- embeddings[,1]
   embeddings <- embeddings[,-1]
   if(convert_to_cui) {
@@ -152,6 +153,7 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
   }
   
   #Benchmark the reference embeddings
+  if(!is.null(ref_embeddings)){
   for(j in 1:length(ref_embeddings)){
     if(!take_intersection){
       ref_cuis <- intersect(rownames(embedding,rownames(ref_embeddings[[j]])))
@@ -171,7 +173,7 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
       df[dim(df)[1]+1,] <- c(paste0('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
     }
   }
-  
+  }
   df$score <- as.numeric(df$score)
 return(df)
 }
