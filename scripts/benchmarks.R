@@ -113,7 +113,14 @@ benchmark_ndf_rt <- function(embedding,k,ref_cuis=NULL){
   return(df)
 }
 
-benchmark_similarity <- function(embedding,file){
+benchmark_similarity <- function(embedding,file,refcuis=NULL){
+  if(is.null(refcuis)){refcuis<-rownames(embedding)}
   similar <- read.csv(file, header=TRUE)
-  
+  df <- data.frame(mean=numeric(),cos=numeric())
+  for(i in 1:length(similar$CUI1)){
+    if((similar$CUI1[i] %in% refcuis) & (similar$CUI2[i] %in% refcuis)){
+      df[dim(df)[1]+1,]=c(similar$Mean[i],cos_similairty(embedding[similar$CUI1[i],],embedding[similar$CUI2[i],]))
+    }
+  }
+  return(cor(df$cos,df$mean))
 }
