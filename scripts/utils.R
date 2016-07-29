@@ -95,6 +95,9 @@ load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1,sep=" "
   return(embeddings)
 }
 
+cos_similairty<- function(vec1,vec2){
+  return(sum(vec1*t(vec2))/(sqrt(sum(vec1^2))*sqrt(sum(vec2^2))))
+}
 
 dcg <- function(vector, true_list){
   score <- 0 
@@ -226,7 +229,7 @@ visualize_map <- function(df){
 }
 
 get_tsne <- function(embedding){
-  return(Rtsne(as.matrix(embedding)))
+  return(data.frame(Rtsne(as.matrix(embedding))$Y))
 }
 
 visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
@@ -304,6 +307,16 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
   return(NULL)
 }
 
+populate_tsne <- function(tsne,dir,names){
+  i<-1
+  for(file in list.files(dir)){
+    comor <- load_comorbidity(paste(dir,file,sep='/'))
+    cuis <- intersect(comor$CUI,tsne$CUI)
+    for(cui in cuis){if(comor$Type[match(cui,comor$CUI)]=='Association'){tsne$Type[match(cui,tsne$CUI)]<-names[i]}}
+    i<-i+1
+  }
+return(tsne)
+}
 
 
 

@@ -112,3 +112,8 @@ benchmark_ndf_rt <- function(embedding,k,ref_cuis=NULL){
   }
   return(df)
 }
+
+benchmark_similarity <- function(embedding,file){
+  similar <- read.csv(file, header=TRUE)
+  
+}
