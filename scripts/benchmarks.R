@@ -5,7 +5,7 @@ source("./Scripts/utils.R")
 options(stringsAsFactors = FALSE)
 
 benchmark_comorbidities <- function(embedding,k, ref_cuis=NULL, return_max = FALSE, metric='DCG') {
-  df <- data.frame(class = character(), concept = character(), dcg = numeric(), associations = numeric(), stringsAsFactors = FALSE)
+  df <- data.frame(class = character(), concept = character(), score = numeric(), associations = numeric(), stringsAsFactors = FALSE)
   
   for(file in list.files('./data/benchmarks/comorbidities/')){
     comorbidity <- load_comorbidity(paste0('./data/benchmarks/comorbidities/',file))
@@ -22,7 +22,7 @@ benchmark_comorbidities <- function(embedding,k, ref_cuis=NULL, return_max = FAL
       score <- dcg(sim_scores, associations)
       }
       if(metric=='AP'){
-      score <- apk(k,associations,sim_scores)
+      score <- length(intersect(names(sim_scores),associations))/k
       }
       if(!return_max){
         df[dim(df)[1]+1,]<-c(strsplit(file,'.txt'), strings[i], score, length(associations))
