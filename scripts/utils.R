@@ -229,7 +229,9 @@ visualize_map <- function(df){
 }
 
 get_tsne <- function(embedding){
-  return(data.frame(Rtsne(as.matrix(embedding))$Y))
+  tsne <- data.frame(Rtsne(as.matrix(embedding))$Y)
+  tsne$CUI <- rownames(embedding)
+  return(tsne)
 }
 
 visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
@@ -309,6 +311,8 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
 
 populate_tsne <- function(tsne,dir,names){
   i<-1
+  if(!('Type' %in% colnames(tsne))){tsne$Type <- 'Background'}
+  if(!('CUI' %in% colnames(tsne))){return(NULL)}
   for(file in list.files(dir)){
     comor <- load_comorbidity(paste(dir,file,sep='/'))
     cuis <- intersect(comor$CUI,tsne$CUI)

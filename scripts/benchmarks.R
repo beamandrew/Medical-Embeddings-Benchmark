@@ -122,5 +122,6 @@ benchmark_similarity <- function(embedding,file,refcuis=NULL){
       df[dim(df)[1]+1,]=c(similar$Mean[i],cos_similairty(embedding[similar$CUI1[i],],embedding[similar$CUI2[i],]))
     }
   }
-  return(cor(df$cos,df$mean))
+  return(df)
 }
+
