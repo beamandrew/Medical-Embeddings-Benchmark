@@ -62,7 +62,7 @@ apk <- function(k, actual, predicted)
   score <- score / min(length(actual), k)
   score
 }
-
+#Returns a list of vectors of the embedding sorted by cosine similarity between the vectors and query
 get_dist <- function(word_vectors,query,sort_result=TRUE) {
   word_vectors <- as.matrix(word_vectors)
   word_vectors_norm <- sqrt(rowSums(word_vectors ^ 2))
@@ -77,12 +77,14 @@ get_dist <- function(word_vectors,query,sort_result=TRUE) {
   }
   return(cos_dist)
 }
-
+#Maps CUI to its string 
 cuis_to_string <- function(cuis) {
   strings <- info$String[match(cuis,info$CUI)]
   return(strings)
 }
-
+#Loads an embedding file
+#For CSV files with no header, use these settings: skip=0, sep=',', csv=T, convert_to_cui=T/F depending
+#If you get a repeated row error, first try swapping convert_to_cui, then check for headers, etc 
 load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1,sep=" ",csv=FALSE) {
   if(csv==FALSE){embeddings <- read.delim(filename,sep=sep,skip=skip,header=header)}
   if(csv==TRUE){embeddings <- read.csv(filename,sep=sep,skip=skip,header=header)}
@@ -94,11 +96,15 @@ load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1,sep=" "
   }
   return(embeddings)
 }
-
+#Returns the cosine similarity between two vectors.
 cos_similairty<- function(vec1,vec2){
-  return(sum(vec1*t(vec2))/(sqrt(sum(vec1^2))*sqrt(sum(vec2^2))))
+  sim <- sum(vec1*t(vec2))/(sqrt(sum(vec1^2))*sqrt(sum(vec2^2)))
+  #If vec1 or vec2 is 0, then R normally returns NA because a 0 division error, this catches this 
+  if(is.na(sim)){return(0)}
+  return(sim)
 }
-
+#Computes the DCG for an input vector as compared to the list of truths 
+#For an explanation of DCG, see https://en.wikipedia.org/wiki/Discounted_cumulative_gain
 dcg <- function(vector, true_list){
   score <- 0 
   cuis <- names(vector)
@@ -109,31 +115,38 @@ dcg <- function(vector, true_list){
   }
   return(score)
 }
-
+#Loads comorbidity files
 load_comorbidity <- function(filename){
   commorbidity <- read.delim(filename)
   return(commorbidity)
 }
-
+#Loads semantic files
 load_semantic_type <- function(filename) {
   semantic <- read.delim(filename)
   return(semantic)
 }
-
+#Loads causitive files
 load_causitive <- function(filename){
   causitive <- read.delim(filename)
   return(causitive)
 }
-
+#Loads NDF RT files
 load_ndf_rt <- function(filename){
   ndf_rt <- read.delim(filename)
   return(ndf_rt)
 }
 
-
+#This function benchmarks an embedding on all possible benchmarks that use MAP as a metric
+#embedding is the embedding you want to benchmark
+#ref_embeddings is a list() of embeddings loaded in your local environment. If specified, then
+#this benchmark will also benchmark these embeddings
+#Ues take_intersection to determine whether the benchmark will benchmark on the intersection of CUIs across all embeddings
 benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE){
+  #Generate the data frame we will return 
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
+  #Reference CUIs are at least the CUIs of the embedding we are benchmarking
   ref_cuis <- rownames(embedding)
+  #If the user specified intersection, we intersect over any specified embedding
   if(!is.null(ref_embeddings)&take_intersection){
     for(j in 1:length(ref_embeddings)){
       ref_cuis <- intersect(ref_cuis,rownames(ref_embeddings[[j]]))
@@ -143,6 +156,7 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
   causitive <- benchmark_causitive(embedding,k,ref_cuis)
   semantic_type <- benchmark_semantic_type(embedding,k,ref_cuis)
   ndf_rt <- benchmark_ndf_rt(embedding,k,ref_cuis)
+  comorbidity <- benchmark_comorbidities(embedding, k, ref_cuis, return_max=T, metric='AP')
   
   name <- deparse(substitute(embedding))
   for(i in 1:dim(causitive)[1]){
@@ -154,17 +168,23 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
   for(i in 1:dim(ndf_rt)[1]){
     df[dim(df)[1]+1,] <- c(paste0('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
   }
+  for(i in 1:dim(comorbidity)[1]){
+    df[dim(df)[1]+1,] <- c(paste0('comorbidity_',paste0(comorbidity[i,1],comorbidity[i,2])),name,comorbidity[i,3])
+  }
   
   #Benchmark the reference embeddings
   if(!is.null(ref_embeddings)){
   for(j in 1:length(ref_embeddings)){
     if(!take_intersection){
+      #we need to at least take the intersection pairwise between the embedding and reference embeddings
       ref_cuis <- intersect(rownames(embedding,rownames(ref_embeddings[[j]])))
     }
     causitive <- benchmark_causitive(ref_embeddings[[j]],k,ref_cuis)
     semantic_type <- benchmark_semantic_type(ref_embeddings[[j]],k,ref_cuis)
     ndf_rt <- benchmark_ndf_rt(ref_embeddings[[j]],k,ref_cuis)
-    
+    comorbidity <- benchmark_comorbidities(ref_embeddings[[j]], k, ref_cuis, return_max=T, metric='AP')
+    #users will have to manually change the names of the reference in the final data frame
+    #the names are lost when reference embeddings are enclosed in a list()
     name <- paste0('reference_',j)
     for(i in 1:dim(causitive)[1]){
       df[dim(df)[1]+1,] <- c(paste0('causitive_',causitive[i,1]),name,causitive[i,2])
@@ -175,16 +195,27 @@ benchmark_map <- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE
     for(i in 1:dim(ndf_rt)[1]){
       df[dim(df)[1]+1,] <- c(paste0('ndf_rt_',ndf_rt[i,1]),name,ndf_rt[i,2])
     }
+    for(i in 1:dim(comorbidity)[1]){
+      df[dim(df)[1]+1,] <- c(paste0('comorbidity_',paste0(comorbidity[i,1],comorbidity[i,2])),name,comorbidity[i,3])
+    }
   }
   }
   df$score <- as.numeric(df$score)
 return(df)
 }
 
-#Takes in one embedding you want to compare to some list of reference embeddings
+#This function benchmarks an embedding on all possible benchmarks that use DCG as a metric
+#embedding is the embedding you want to benchmark
+#ref_embeddings is a list() of embeddings loaded in your local environment. If specified, then
+#this benchmark will also benchmark these embeddings
+#Ues take_intersection to determine whether the benchmark will benchmark on the intersection of CUIs across all embeddings
+#return max dictates whether the DCG for all concepts in a file are returned, or just the maximum 
 benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE,return_max=FALSE){
+  #Generating the data frame we return 
   df <- data.frame(test = character(), embedding_name = character(), score = numeric(), stringsAsFactors = FALSE)
+  #Reference CUIs are at least the CUIs of the embedding we are benchmarking
   ref_cuis <- rownames(embedding)
+  #If the user specified intersection, we intersect over any specified embedding
   if(!is.null(ref_embeddings)&take_intersection){
     for(j in 1:length(ref_embeddings)){
       ref_cuis <- intersect(ref_cuis,rownames(ref_embeddings[[j]]))
@@ -197,14 +228,15 @@ benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE,
       df[dim(df)[1]+1,] <- c(paste(comorbidity[j,1],comorbidity[j,2],sep='_'),name,comorbidity[j,3])
   }
   
-
   #Benchmark the reference embeddings
   for(j in 1:length(ref_embeddings)){
     if(!take_intersection){
       ref_cuis <- intersect(rownames(embedding,rownames(ref_embeddings[[j]])))
     }
     comorbidity <- benchmark_comorbidities(ref_embeddings[[j]], k, ref_cuis,return_max)
-    name <- deparse(substitute(ref_embeddings[[j]]))
+    #users will have to manually change the names of the reference in the final data frame
+    #the names are lost when reference embeddings are enclosed in a list()
+    name <- paste0('reference_',j)
     for(i in 1:dim(comorbidity)[1]){
       df[dim(df)[1]+1,] <- c(paste(comorbidity[i,1],comorbidity[i,2],sep='_'),name,comorbidity[i,3])
     }
@@ -213,14 +245,14 @@ benchmark_dcg<- function(embedding,k,ref_embeddings=NULL,take_intersection=TRUE,
   return(df)
 }
 
-
+#Simple ggplot of the data frame that is produced by benchmark_dcg()
 visualize_dcg <- function(df){
   rt <- ggplot(data=df, aes(x=test,y=score,color=embedding_name))+geom_point()
   rt <- rt+theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   rt <- rt+labs(title='DCG Benchmark')+labs(x='Test')+labs(y='DCG Score')
   return(rt)
 }
-
+#Simple ggplot of the data frame that is prodcued by benchmark_map()
 visualize_map <- function(df){
   rt <- ggplot(data=df, aes(x=df$test,y=df$score,color=df$embedding_name))+geom_point()
   rt <- rt+theme_bw()+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
@@ -228,79 +260,95 @@ visualize_map <- function(df){
   return(rt)
 }
 
+#generates a tSNE of an embedding
+#defaults the axis names to X1 and X2
+#adds a column that keeps track the CUIs for each data point in the tSNE 
 get_tsne <- function(embedding){
   tsne <- data.frame(Rtsne(as.matrix(embedding))$Y)
+  colnames(tsne)<-c('X1','X2')
   tsne$CUI <- rownames(embedding)
   return(tsne)
 }
 
+#This function visualizes where the CUIs in a file are located in the tSNE plot 
+#if tsne is NULL, this will take much longer to compute 
+#file is the path, if not specified the function will return the basic tSNE
+#type is one of 'COMORBIDITY', 'CAUSITIVE', 'SEMANTIC_TYPE', 'NDF_RT'
+#***This assumes the tSNE dimensions are X1 and X2***
+#If you generate the tSNE with get_tsne(), this function will automatically work 
 visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
   type = toupper(type)
   if(is.null(tsne)){
     tsne <- get_tsne(embedding)
   }
   if(file==''){
-    df <- tsne$Y
-    colnames(df)<-c('X1','X2')
+    df <- tsne
     rt <-ggplot(data=df,aes(x=X1,y=X2))+geom_point()+scale_alpha(.1)+theme_bw()
     return(rt)
   }
+  #Get the name of the file 
   name = strsplit(tail(strsplit(file,'/')[[1]],1),'.txt')[[1]]
   if(identical(type,'COMORBIDITY')){
     comorbidity <- load_comorbidity(file)
-    df <- data.frame(tsne$Y)
-    colnames(df)<-c('X1','X2')
+    df <- tsne
+    #Get the valid concepts and associations for the embedding
     concepts <- intersect(comorbidity$CUI[which(comorbidity$Type=='Concept')],rownames(embedding))
     associations <- intersect(comorbidity$CUI[which(comorbidity$Type=='Association')],rownames(embedding))
-    df$CUI <- rownames(embedding)
     df$Type <- 'Background'
+    #Match the CUIs that are concepts in the embedding 
     for(cui in concepts){
       df[match(cui,df$CUI),4]<-'Concept'}
+    #Match the CUIs that are associations in the embedding
     for(cui in associations){df[match(cui,df$CUI),4]<-'Association'}
+    #plot the tSNE
     rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#E69F00","#999999", "#56B4E9"))+scale_alpha_manual(values = c(1,.1,1))+theme_bw()
     rt <- rt + labs(title=paste(name,'Comorbidity t-SNE'))
     return(rt)
   }
   if(identical(type,'CAUSATIVE')){
     cause <- load_causitive(file)
-    df <- data.frame(tsne$Y)
-    colnames(df)<-c('X1','X2')
-    df$CUI <- rownames(embedding)
+    df <- tsne
     df$Type <- 'Background'
+    #Get the valid concepts and associations
     for(cui in intersect(cause$CUI_Cause,df$CUI)){df[match(cui,df$CUI),4]<-'Cause'}
     for(cui in intersect(cause$CUI_Result,df$CUI)){df[match(cui,df$CUI),4]<-'Result'}
+    #Plot the tSNE
     rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
     rt <- rt+labs(title=paste(name,'Causitive t-SNE'))
     return(rt)
   }
   if(identical(type,'SEMANTIC_TYPE')){
     semantic_type <- load_semnatic_type(file)
-    df <- data.frame(tsne$Y)
-    colnames(df)<-c('X1','X2')
+    df <- tsne
+    #Get the valid CUIs
     cuis <- intersect(semantic_type$CUI,rownames(embedding))
-    df$CUI <- rownames(embedding)
     df$Type <- 'Background'
+    #Match the valid CUIs
     for(cui in cuis){df[match(cui,df$CUI),4]<-name}
+    #plot the tSNE
     rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00"))+scale_alpha_manual(values = c(.1,1))+theme_bw()
     rt <- rt+labs(title=paste(name,'Semantic Type t-SNE'))
     return(rt)
   }
   if(identical(type,'NDF_RT')){
     ndfrt <- load_semnatic_type(file)
+    #Get the valid treatments 
     treatment <- intersect(ndfrt$Treatment,rownames(embedding))
+    #Initialize the valid condition list with an empty string 
     condition <- ''
+    #Since conditions are stored in a list of condition1, condition2... ; condition1, condition2, condition3...;
+    #Just pasting the line to the condition string
     for (i in 1:length(ndfrt$Condition)){
       condition <- paste0(condition, ndfrt$Condition[i])
     }
+    #Then split the condition string by commas, getting all the conditions, and finding all valid conditions 
     condition <- intersect(strsplit(condition,','),rownames(embedding))
-    df <- data.frame(tsne$Y)
-    colnames(df)<-c('X1','X2')
-    df$CUI <- rownames(embedding)
+    df <- tsne
     df$Type <- 'Background'
-    for(cui in treatment){
-      df[match(cui,df$CUI),4]<-'Treatment'}
-    for(cui in condition){
-      df[match(cui,df$CUI),4]<-'Condition'}
+    #Matching the valid treatments and conditions 
+    for(cui in treatment){df[match(cui,df$CUI),4]<-'Treatment'}
+    for(cui in condition){df[match(cui,df$CUI),4]<-'Condition'}
+    #Plot the tSNE 
     rt <- ggplot(data = df, aes(x=X1,y=X2,color=Type,alpha=Type))+geom_point()+scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+scale_alpha_manual(values = c(.1,1,1))+theme_bw()
     rt <- rt+labs(title=paste(name,'NDF_RT t-SNE'))
     return(rt)
@@ -309,17 +357,33 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
   return(NULL)
 }
 
-populate_tsne <- function(tsne,dir,names){
+#This function marks a tSNE with multiple different files (can be comorbidity or semnatic type files) 
+#dir is a directory where all the files are
+#names is a list() of the readable names you want the tSNE to be marked with eg 'Genetic Funciton', 'Heart Disease', 'Obesity'
+#as opposed to 'genetic_function.txt'
+#If you leave names null, they will default to the file names 
+populate_tsne <- function(tsne,dir,names=NULL){
+  #Counter for the for loop
   i<-1
-  if(!('Type' %in% colnames(tsne))){tsne$Type <- 'Background'}
-  if(!('CUI' %in% colnames(tsne))){return(NULL)}
+  #So we don't overwrite anything unfortuante 
+  df <- tsne 
+  #If there is a Type column, presumably the user wants to maintain the information there 
+  if(!('Type' %in% colnames(df))){df$Type <- 'Background'}
+  #If there is no CUI list, you should use get_tsne() again 
+  if(!('CUI' %in% colnames(df))){return(NULL)}
+  #Loop over the files of that are either comorbidity files or semantic type files 
   for(file in list.files(dir)){
     comor <- load_comorbidity(paste(dir,file,sep='/'))
-    cuis <- intersect(comor$CUI,tsne$CUI)
-    for(cui in cuis){if(comor$Type[match(cui,comor$CUI)]=='Association'){tsne$Type[match(cui,tsne$CUI)]<-names[i]}}
+    #Get the valid cuis 
+    cuis <- intersect(comor$CUI,df$CUI)
+    name <- names[i]
+    if(is.null(names)){name<-strsplit(file,'.txt')}
+    #match the valid cuis and indicate their type 
+    for(cui in cuis){if(comor$Type[match(cui,comor$CUI)]=='Association'){df$Type[match(cui,df$CUI)]<-name}}
+    #move the counter 
     i<-i+1
   }
-return(tsne)
+  return(df)
 }
 
 
