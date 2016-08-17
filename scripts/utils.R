@@ -386,6 +386,15 @@ populate_tsne <- function(tsne,dir,names=NULL){
   return(df)
 }
 
-
-
-
+#Converts the top k vectors for a worb embedding back into English 
+top_k_vis <- function(query, embedding, k){
+  if(!(query %in% rownames(embedding))){
+    print('CUI not in embedding')
+    return(NULL)
+  }
+  print(paste('Conversion for',query,info$String[match(query,info$CUI)]))
+  cos <- get_dist(embedding, query)[1:k]
+  cuis <- names(cos)
+  words <- info$String[match(cuis,info$CUI)]
+  return(cbind(words,cos))
+}

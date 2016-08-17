@@ -78,7 +78,7 @@ benchmark_semantic_type <- function(embedding,k,ref_cuis=NULL){
     }
     #Diving by the number of terms gives us MAP 
     map <- map / length(cuis)
-    df[length_df+1,] <- c(strsplit(file,'.txt'),map)
+    df[dim(df)[1]+1,] <- c(strsplit(file,'.txt'),map)
   }
   return(df)
 }
@@ -112,7 +112,7 @@ benchmark_causitive <- function(embedding,k,ref_cuis=NULL){
     #Dividing by the number of terms gives MAP 
     map <- map / length(cuis)
     #Writing the score to the data frame 
-    df[length_df+1,] <- c(strsplit(file,'.txt'),map)
+    df[dim(df)[1]+1,] <- c(strsplit(file,'.txt'),map)
   }
   return(df)
 }
