@@ -85,9 +85,8 @@ cuis_to_string <- function(cuis) {
 #Loads an embedding file
 #For CSV files with no header, use these settings: skip=0, sep=',', csv=T, convert_to_cui=T/F depending
 #If you get a repeated row error, first try swapping convert_to_cui, then check for headers, etc 
-load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=1,sep=" ",csv=FALSE) {
-  if(csv==FALSE){embeddings <- read.delim(filename,sep=sep,skip=skip,header=header)}
-  if(csv==TRUE){embeddings <- read.csv(filename,sep=sep,skip=skip,header=header)}
+load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=0,delim=" ") {
+  if(csv==FALSE){embeddings <- read.delim(filename,sep=delim,skip=skip,header=header)}
   rownames(embeddings) <- embeddings[,1]
   embeddings <- embeddings[,-1]
   if(convert_to_cui) {
