@@ -62,10 +62,11 @@ apk <- function(k, actual, predicted)
   score <- score / min(length(actual), k)
   score
 }
+
 #Returns a list of vectors of the embedding sorted by cosine similarity between the vectors and query
 get_dist <- function(word_vectors,query,sort_result=TRUE) {
   word_vectors <- as.matrix(word_vectors)
-  word_vectors_norm <- sqrt(rowSums(word_vectors ^ 2))
+  word_vectors_norm <- sqrt(rowSums(word_vectors^2))
   query_vec <- word_vectors[query,,drop=FALSE]
   cos_dist <- text2vec:::cosine(query_vec, 
                                 word_vectors, 
@@ -82,19 +83,26 @@ cuis_to_string <- function(cuis) {
   strings <- info$String[match(cuis,info$CUI)]
   return(strings)
 }
-#Loads an embedding file
-#For CSV files with no header, use these settings: skip=0, sep=',', csv=T, convert_to_cui=T/F depending
-#If you get a repeated row error, first try swapping convert_to_cui, then check for headers, etc 
-load_embeddings <- function(filename,convert_to_cui=TRUE,header=F,skip=0,delim=" ") {
-  if(csv==FALSE){embeddings <- read.delim(filename,sep=delim,skip=skip,header=header)}
+
+#' Load an embedding from a text file.
+#' 
+#' @param filename File name to be loaded.
+#' @param convert_to_cui Should the rownames be mapped from the identifies of Finalyson et al to CUIs?
+#' @param header Are there column headers in the file?
+#' @param skip How many lines should be skipped?
+#' @param delim Delimiter used in file.
+#' @return Dataframe containing the embeddings.
+load_embeddings <- function(filename,convert_to_cui=FALSE,header=FALSE,skip=1,delim=" ") {
+  embeddings <- data.frame(read_delim(filename,delim=delim,skip=skip,col_names = header))
   rownames(embeddings) <- embeddings[,1]
   embeddings <- embeddings[,-1]
   if(convert_to_cui) {
     cuis <- info$CUI[match(rownames(embeddings),info$Concept_ID)]
     rownames(embeddings) <- cuis
   }
-  return(embeddings)
+  return(data.matrix(embeddings))
 }
+
 #Returns the cosine similarity between two vectors.
 cos_similairty<- function(vec1,vec2){
   sim <- sum(vec1*t(vec2))/(sqrt(sum(vec1^2))*sqrt(sum(vec2^2)))
@@ -102,6 +110,7 @@ cos_similairty<- function(vec1,vec2){
   if(is.na(sim)){return(0)}
   return(sim)
 }
+
 #Computes the DCG for an input vector as compared to the list of truths 
 #For an explanation of DCG, see https://en.wikipedia.org/wiki/Discounted_cumulative_gain
 dcg <- function(vector, true_list){
@@ -262,8 +271,8 @@ visualize_map <- function(df){
 #generates a tSNE of an embedding
 #defaults the axis names to X1 and X2
 #adds a column that keeps track the CUIs for each data point in the tSNE 
-get_tsne <- function(embedding){
-  tsne <- data.frame(Rtsne(as.matrix(embedding))$Y)
+get_tsne <- function(embedding,verbose=FALSE){
+  tsne <- data.frame(Rtsne(as.matrix(embedding),verbose=verbose)$Y)
   colnames(tsne)<-c('X1','X2')
   tsne$CUI <- rownames(embedding)
   return(tsne)
@@ -317,7 +326,7 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
     return(rt)
   }
   if(identical(type,'SEMANTIC_TYPE')){
-    semantic_type <- load_semnatic_type(file)
+    semantic_type <- load_semantic_type(file)
     df <- tsne
     #Get the valid CUIs
     cuis <- intersect(semantic_type$CUI,rownames(embedding))
@@ -330,7 +339,7 @@ visualize_embedding <- function(embedding,tsne=NULL,file='', type=''){
     return(rt)
   }
   if(identical(type,'NDF_RT')){
-    ndfrt <- load_semnatic_type(file)
+    ndfrt <- load_semantic_type(file)
     #Get the valid treatments 
     treatment <- intersect(ndfrt$Treatment,rownames(embedding))
     #Initialize the valid condition list with an empty string 
