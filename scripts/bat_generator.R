@@ -1,3 +1,5 @@
+# takes in a list of strings that are the names of your embedding matrices in your local environment 
+
 generate_BAT <- function(embedding_list,k,take_intersection=T){
   bat <- data.frame(Embedding=character(),Test=character(),Score=numeric(), stringsAsFactors = F)
   ref_cuis <- NULL
